@@ -146,13 +146,18 @@ vim.opt.splitbelow = true
 --  See `:help 'list'`
 --  and `:help 'listchars'`
 vim.opt.list = true
+--vim.opt.listchars = { tab = ' ', trail = '·', nbsp = '␣' }
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
-
+-- vim.opt.listchars = {  trail = '·', nbsp = '␣' }
 -- Preview substitutions live, as you type!
 vim.opt.inccommand = 'split'
 
 -- Show which line your cursor is on
 vim.opt.cursorline = true
+
+
+-- hlsearch
+vim.opt.hlsearch = true
 
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
@@ -166,7 +171,9 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-
+vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
+vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
+vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
 -- is not what someone will guess without a bit more experience.
@@ -204,6 +211,8 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -215,6 +224,10 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   end
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
+
+
+
+
 
 -- [[ Configure and install plugins ]]
 --
@@ -436,26 +449,30 @@ require('lazy').setup({
       end, { desc = '[S]earch [N]eovim files' })
     end,
   },
-
   -- LSP Plugins
-  {
-    -- `lazydev` configures Lua LSP for your Neovim config, runtime and plugins
-    -- used for completion, annotations and signatures of Neovim apis
-    'folke/lazydev.nvim',
-    ft = 'lua',
-    opts = {
-      library = {
-        -- Load luvit types when the `vim.uv` word is found
-        { path = 'luvit-meta/library', words = { 'vim%.uv' } },
-      },
-    },
-  },
+  -- { -- has to be chaenged when set to 0.10
+  --   -- `lazydev` configures Lua LSP for your Neovim config, runtime and plugins
+  --   -- used for completion, annotations and signatures of Neovim apis
+  --   'folke/lazydev.nvim',
+  --   ft = 'lua',
+  --   opts = {
+  --     library = {
+  --       -- Load luvit types when the `vim.uv` word is found
+  --       { path = 'luvit-meta/library', words = { 'vim%.uv' } },
+  --     },
+  --   },
+  -- },
+       
+ 
+ {'navarasu/onedark.nvim'},
+  { 'folke/neodev.nvim', opts = {} },
   { 'Bilal2453/luvit-meta', lazy = true },
   {
     -- Main LSP Configuration
     'neovim/nvim-lspconfig',
     dependencies = {
-      -- Automatically install LSPs and related tools to stdpath for Neovim
+      -- Automatically install LSPs and related tools to st
+      -- dpath for Neovim
       { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
       'williamboman/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
@@ -465,7 +482,7 @@ require('lazy').setup({
       { 'j-hui/fidget.nvim', opts = {} },
 
       -- Allows extra capabilities provided by nvim-cmp
-      'hrsh7th/cmp-nvim-lsp',
+ {     'hrsh7th/cmp-nvim-lsp',  enabled=true},
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -509,7 +526,9 @@ require('lazy').setup({
             mode = mode or 'n'
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
-
+          -- Opens a popup that displays documentation about the word under your cursor
+          --  See `:help K` for why this keymap.
+          map('K', vim.lsp.buf.hover, 'Hover Documentation')
           -- Jump to the definition of the word under your cursor.
           --  This is where a variable was first declared, or where a function is defined, etc.
           --  To jump back, press <C-t>.
@@ -546,35 +565,36 @@ require('lazy').setup({
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
-
+          -- quit
+          map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit All" })
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
           --    See `:help CursorHold` for information about when this is executed
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
-          local client = vim.lsp.get_client_by_id(event.data.client_id)
-          if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
-            local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
-            vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-              buffer = event.buf,
-              group = highlight_augroup,
-              callback = vim.lsp.buf.document_highlight,
-            })
+          -- local client = vim.lsp.get_client_by_id(event.data.client_id)
+          -- if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
+          --   local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
+          --   vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+          --     buffer = event.buf,
+          --     group = highlight_augroup,
+          --     callback = vim.lsp.buf.document_highlight,
+          --   })
 
-            vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
-              buffer = event.buf,
-              group = highlight_augroup,
-              callback = vim.lsp.buf.clear_references,
-            })
+          --   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
+          --     buffer = event.buf,
+          --     group = highlight_augroup,
+          --     callback = vim.lsp.buf.clear_references,
+          --   })
 
-            vim.api.nvim_create_autocmd('LspDetach', {
-              group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
-              callback = function(event2)
-                vim.lsp.buf.clear_references()
-                vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
-              end,
-            })
-          end
+          --   vim.api.nvim_create_autocmd('LspDetach', {
+          --     group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
+          --     callback = function(event2)
+          --       vim.lsp.buf.clear_references()
+          --       vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
+          --     end,
+          --   })
+          -- end
 
           -- The following code creates a keymap to toggle inlay hints in your
           -- code, if the language server you are using supports them
@@ -647,7 +667,13 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'v-analyzer',
+        "prettier",
+        "hlint",
+      --  "haskell-language-server"
       })
+       local lsp = require("kickstart.config.lsp")
+      vim.list_extend(ensure_installed,vim.tbl_keys(lsp or {}))
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
       require('mason-lspconfig').setup {
@@ -664,9 +690,117 @@ require('lazy').setup({
       }
     end,
   },
+  -- haskell tools
+  {
+    "mrcjkb/haskell-tools.nvim",
+    version = "^3",
+    ft = { "haskell", "lhaskell", "cabal", "cabalproject" },
+    dependencies = {
+      { "nvim-telescope/telescope.nvim", optional = true },
+    },
+    config = function()
+      local ok, telescope = pcall(require, "telescope")
+      if ok then
+        telescope.load_extension("ht")
+      end
+    end,
+  },
+  -- fix haskell lsp
+  {
+    "neovim/nvim-lspconfig",
+    opts = {
+      setup = {
+        hls = function()
+          return true
+        end,
+      },
+    },
+  },
+  
+  -- lazy.nvim
+  {
+    "folke/noice.nvim",
+    event = "VeryLazy",
 
+    opts = {
+        notify = {
+          -- Noice can be used as `vim.notify` so you can route any notification like other messages
+          -- Notification messages have their level and other properties set.
+          -- event is always "notify" and kind can be any log level as a string
+          -- The default routes will forward notifications to nvim-notify
+          -- Benefit of using Noice for this is the routing and consistent history view
+          enabled = false,
+        --  view = "notify",
+        },
+       lsp = {
+           progress = { enabled = false },
+         override = {
+           ["vim.lsp.util.convert_input_to_markdown_lines"] = true,
+           ["vim.lsp.util.stylize_markdown"] = true,
+           ["cmp.entry.get_documentation"] = true,
+         },
+       },
+       routes = {
+         {
+           filter = {
+             event = "msg_show",
+             any = {
+               { find = "%d+L, %d+B" },
+               { find = "; after #%d+" },
+               { find = "; before #%d+" },
+             },
+           },
+           view = "mini",
+         },
+       },
+       presets = {
+         bottom_search = true,
+         command_palette = true,
+         long_message_to_split = true,
+       },
+     },
+     -- stylua: ignore
+     keys = {
+       { "<leader>sn", "", desc = "+noice"},
+       { "<S-Enter>", function() require("noice").redirect(vim.fn.getcmdline()) end, mode = "c", desc = "Redirect Cmdline" },
+       { "<leader>snl", function() require("noice").cmd("last") end, desc = "Noice Last Message" },
+       { "<leader>snh", function() require("noice").cmd("history") end, desc = "Noice History" },
+       { "<leader>sna", function() require("noice").cmd("all") end, desc = "Noice All" },
+       { "<leader>snd", function() require("noice").cmd("dismiss") end, desc = "Dismiss All" },
+       { "<leader>snt", function() require("noice").cmd("pick") end, desc = "Noice Picker (Telescope/FzfLua)" },
+       { "<c-f>", function() if not require("noice.lsp").scroll(4) then return "<c-f>" end end, silent = true, expr = true, desc = "Scroll Forward", mode = {"i", "n", "s"} },
+       { "<c-b>", function() if not require("noice.lsp").scroll(-4) then return "<c-b>" end end, silent = true, expr = true, desc = "Scroll Backward", mode = {"i", "n", "s"}},
+     },
+     config = function(_, opts)
+       -- HACK: noice shows messages from before it was enabled,
+       -- but this is not ideal when Lazy is installing plugins,
+       -- so clear the messages in this case.
+       if vim.o.filetype == "lazy" then
+         vim.cmd([[messages clear]])
+       end
+       require("noice").setup(opts)
+     end,
+    dependencies = {
+      -- if you lazy-load any plugin below, make sure to add proper `module="..."` entries
+      "MunifTanjim/nui.nvim",
+      -- OPTIONAL:
+      --   `nvim-notify` is only needed, if you want to use the notification view.
+      --   If not available, we use `mini` as the fallback
+  --    "rcarriga/nvim-notify",
+      }
+  },
+  { "j-hui/fidget.nvim", opts = {} },
+     { "https://git.sr.ht/~whynothugo/lsp_lines.nvim" },
+
+
+
+     -- Schema information
+    { "b0o/SchemaStore.nvim"},
+  
+-- seted to 0.9.5 for the time
   { -- Autoformat
     'stevearc/conform.nvim',
+    branch="nvim-0.9",
     event = { 'BufWritePre' },
     cmd = { 'ConformInfo' },
     keys = {
@@ -680,7 +814,7 @@ require('lazy').setup({
       },
     },
     opts = {
-      notify_on_error = false,
+      notify_on_error = true,
       format_on_save = function(bufnr)
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
@@ -699,17 +833,23 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        
+        rust = { "rustfmt", lsp_format = "fallback" },
+
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+         javascript = { "prettierd", "prettier", stop_after_first = true },
+         html = { "prettierd", "prettier", stop_after_first = true },
+
       },
     },
   },
 
   { -- Autocompletion
     'hrsh7th/nvim-cmp',
+    enabled=true,
     event = 'InsertEnter',
     dependencies = {
       -- Snippet Engine & its associated nvim-cmp source
@@ -744,6 +884,9 @@ require('lazy').setup({
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
     },
+    { "bluz71/vim-nightfly-colors", name = "nightfly", lazy = false, priority = 1000 },
+    {'Shatur/neovim-ayu', --name='ayu', 
+        lazy = false, priority = 1000},
     config = function()
       -- See `:help cmp`
       local cmp = require 'cmp'
@@ -751,12 +894,16 @@ require('lazy').setup({
       luasnip.config.setup {}
 
       cmp.setup {
+          
+      
         snippet = {
           expand = function(args)
             luasnip.lsp_expand(args.body)
           end,
         },
-        completion = { completeopt = 'menu,menuone,noinsert' },
+        completion = {         
+         
+            autocomplete = false,completeopt = 'menu,menuone,noinsert' },
 
         -- For an understanding of why these mappings were
         -- chosen, you will need to read `:help ins-completion`
@@ -806,13 +953,37 @@ require('lazy').setup({
               luasnip.jump(-1)
             end
           end, { 'i', 's' }),
+  -- ["<Tab>"] = cmp.mapping(function(fallback)
+  --         if cmp.visible() then
+  --           cmp.select_next_item()
+  --           -- You could replace the expand_or_jumpable() calls with expand_or_locally_jumpable()
+  --           -- this way you will only jump inside the snippet region
+  --         elseif luasnip.expand_or_jumpable() then
+  --           luasnip.expand_or_jump()
+  --         elseif has_words_before() then
+  --           cmp.complete()
+  --         else
+  --           fallback()
+  --         end
+  --       end, { "i", "s" }),
+  --       ["<S-Tab>"] = cmp.mapping(function(fallback)
+  --         if cmp.visible() then
+  --           cmp.select_prev_item()
+  --         elseif luasnip.jumpable(-1) then
+  --           luasnip.jump(-1)
+  --         else
+  --           fallback()
+  --         end
+  --       end, { "i", "s" }),
 
+  --                 ["<C-x>"] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+ --["<enter>"] = cmp.mapping.confirm({ select = true }), 
           -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
           --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
         },
         sources = {
           {
-            name = 'lazydev',
+              --  name = 'lazydev',
             -- set group index to 0 to skip loading LuaLS completions as lazydev recommends it
             group_index = 0,
           },
@@ -822,6 +993,10 @@ require('lazy').setup({
         },
       }
     end,
+    opts = function(_, opts)
+       opts.auto_brackets = opts.auto_brackets or {}
+       table.insert(opts.auto_brackets, "python")
+     end,
   },
 
   { -- You can easily change to a different colorscheme.
@@ -831,17 +1006,27 @@ require('lazy').setup({
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
     'folke/tokyonight.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
-    init = function()
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+    -- init = function()
+    --   -- Load the colorscheme here.
+    --   -- Like many other themes, this one has different styles, and you could load
+    --   -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+    --   vim.cmd.colorscheme 'tokyonight-night'
 
-      -- You can configure highlights by doing something like:
-      vim.cmd.hi 'Comment gui=none'
-    end,
+    --   -- You can configure highlights by doing something like:
+    --   vim.cmd.hi 'Comment gui=none'
+    -- end,
   },
-
+  {
+      'AlexvZyl/nordic.nvim',
+      lazy = false,
+      priority = 1000,
+      -- config = function()
+      --     require 'nordic' .load()
+      -- end
+  },
+  
+  -- pest lsp
+  {'pest-parser/pest.vim'},
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
@@ -882,6 +1067,11 @@ require('lazy').setup({
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
   },
+  {'akinsho/bufferline.nvim', version = "*", dependencies = 'nvim-tree/nvim-web-devicons'},
+  {'nvim-tree/nvim-web-devicons'},
+  {'akinsho/toggleterm.nvim', version = "*", config = true},
+  {"jpx40/lsp-inlayhints.nvim"},
+
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
@@ -919,8 +1109,8 @@ require('lazy').setup({
   --
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+   require 'kickstart.plugins.lint',
+   require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
@@ -929,7 +1119,7 @@ require('lazy').setup({
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+ { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
@@ -952,5 +1142,262 @@ require('lazy').setup({
   },
 })
 
+
+require("kickstart.config.keymaps").init()
+
+
+require("filetype").setup({
+  overrides = {
+    extensions = {
+      rust ="rs",
+      tmpl = "templ",
+      v = "vlang",
+      c = "c",
+      h = "c",
+      d = "dlang",
+      re = "reason",
+      slint = "slint",
+      sql = "sql",
+      html = "html",
+      bash = "sh",
+      sh = "sh",
+      odin = "odin",
+      tsp = "typespec",
+      roc = "roc",
+      svelte = "svelte",
+    },
+  },
+})
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+-- require("noice").setup({
+--   lsp = {
+--     -- override markdown rendering so that **cmp** and other plugins use **Treesitter**
+--     override = {
+--       ["vim.lsp.util.convert_input_to_markdown_lines"] = true,
+--       ["vim.lsp.util.stylize_markdown"] = true,
+--       ["cmp.entry.get_documentation"] = true, -- requires hrsh7th/nvim-cmp
+--     },
+--   },
+--   -- you can enable a preset for easier configuration
+--   presets = {
+--     bottom_search = true, -- use a classic bottom cmdline for search
+--     command_palette = true, -- position the cmdline and popupmenu together
+--     long_message_to_split = true, -- long messages will be sent to a split
+--     inc_rename = false, -- enables an input dialog for inc-rename.nvim
+--     lsp_doc_border = false, -- add a border to hover docs and signature help
+--   },
+-- })
+
+
+--https://lsp-zero.netlify.app/v3.x/language-server-configuration.html
+
+-- extra treesitter
+vim.filetype.add({
+  extension = {
+    c3 = "c3",
+    c3i = "c3",
+    c3t = "c3",
+  },
+})
+
+local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
+parser_config.c3 = {
+  install_info = {
+    url = "https://github.com/c3lang/tree-sitter-c3",
+    files = {"src/parser.c", "src/scanner.c"},
+    branch = "main",
+  },
+}
+require("lsp-inlayhints").setup()
+vim.api.nvim_create_augroup("LspAttach_inlayhints", {})
+vim.api.nvim_create_autocmd("LspAttach", {
+  group = "LspAttach_inlayhints",
+  callback = function(args)
+    if not (args.data and args.data.client_id) then
+      return
+    end
+
+    local bufnr = args.buf
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    require("lsp-inlayhints").on_attach(client, bufnr)
+  end,
+})
+
+-- require("cmp").setup.filetype("rs", {
+--   enabled = false,
+-- })
+-- vim.api.nvim_create_autocmd('FileType', {
+--   callback = function()
+--     require('cmp').setup.buffer {
+      
+--     }
+--   end,
+-- })
+-- 
+require'lspconfig'.v_analyzer.setup{}
+
+--vim.cmd.colorscheme 'tokyonight'
+-- vim.cmd.hi 'Comment gui=none'
+-- 
+-- Lua
+require('onedark').load()
+
+
+vim.filetype.add({
+  extension = {
+    templ = "templ",
+    hare = "ha",
+  },
+})
+
+local treesitter_parser_config = require("nvim-treesitter.parsers").get_parser_configs()
+
+treesitter_parser_config.roc = {
+  install_info = {
+    url = "https://github.com/faldor20/tree-sitter-roc",
+    files = { "src/parser.c", "src/scanner.c" },
+  },
+}
+
+treesitter_parser_config.templ = {
+  install_info = {
+    url = "https://github.com/vrischmann/tree-sitter-templ.git",
+    files = { "src/parser.c", "src/scanner.c" },
+    branch = "master",
+  },
+}
+
+vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter" }, {
+  pattern = { "*.roc" },
+  command = "set filetype=roc",
+})
+
+
+parser_config.gotmpl = {
+  install_info = {
+    url = "https://github.com/ngalaiko/tree-sitter-go-template",
+    files = { "src/parser.c" },
+  },
+  filetype = "gotmpl",
+  -- may have to remove yaml for gotmpl
+  used_by = { "gohtmltmpl", "gotexttmpl", "gotmpl", "yaml" },
+}
+
+parser_config.odin = {
+  install_info = {
+    url = "https://github.com/laytan/tree-sitter-odin",
+    files = { "src/parser.c", "src/scanner.c" },
+
+    --branch = "master",
+  },
+  filetype = "odin",
+  used_by = { "odin" },
+}
+
+parser_config.typespec = {
+  install_info = {
+    url = "https://github.com/happenslol/tree-sitter-typespec",
+    files = { "src/parser.c" },
+    branch = "main",
+  },
+  filetype = "tsp",
+  branch = "main",
+  used_by = { "typespec" },
+}
+
+parser_config.buzz = {
+  install_info = {
+    url = "https://github.com/buzz-language/tree-sitter-buzz",
+    files = { "src/parser.c" },
+    branch = "main",
+  },
+  filetype = "buzz",
+  branch = "main",
+  -- may have to remove yaml for gotmpl
+  used_by = { "buzz" },
+}
+parser_config.crystal = {
+  install_info = {
+    url = "https://github.com/crystal-lang-tools/tree-sitter",
+    files = { "src/parser.c" },
+    branch = "main",
+  },
+  filetype = "cr",
+  branch = "main",
+  -- may have to remove yaml for gotmpl
+  used_by = { "crystal" },
+}
+vim.filetype.add({
+  extension = {
+    templ = "templ",
+  },
+})
+local lspconfig = require("lspconfig")
+lspconfig["sourcekit"].setup({
+  capabilities = capabilities,
+  on_attach = on_attach,
+})
+
+require("pest-vim").setup({})
+require("lspconfig").vala_ls.setup({
+  -- defaults, no need to specify these
+  cmd = { "vala-language-server" },
+  filetypes = { "vala", "genie" },
+  --root_dir = root_pattern("meson.build", ".git"),
+  single_file_support = true,
+})
+
+
+parser_config.haxe = {
+  install_info = {
+    url = "https://github.com/vantreeseba/tree-sitter-haxe",
+    files = { "src/parser.c" },
+    -- optional entries:
+    branch = "main",
+  },
+  filetype = "haxe",
+}
+
+parser_config.roc = {
+  install_info = {
+    url = "https://github.com/faldor20/tree-sitter-roc",
+    files = { "src/parser.c", "src/scanner.c" },
+  },
+  filetype = "roc",
+  used_by = { "roc" },
+}
+
+parser_config.tscn = {
+  install_info = {
+    url = "https://github.com/PrestonKnopp/tree-sitter-godot-resource",
+    files = { "src/parser.c" },
+  },
+  filetype = "tscn",
+  -- may have to remove yaml for gotmpl
+  used_by = { "godot" },
+}
+parser_config.printf = {
+  install_info = {
+    url = "https://github.com/pstuifzand/tree-sitter-printf",
+    files = { "src/parser.c" },
+    branch = "main",
+  },
+  filetype = "printf",
+}
+
+
+parser_config.hare = {
+  install_info = {
+    url = "/home/jonas/repo/tree-sitter-hare",
+    files = { "src/parser.c" },
+   -- branch = "main",
+  },
+  filetype = "hare",
+}
+
+
+require'lspconfig'.ocamllsp.setup{}
+vim.opt.termguicolors = true
+
+require("bufferline").setup{}

@@ -123,7 +123,7 @@ vim.opt.breakindent = true
 
 -- Save undo history
 vim.opt.undofile = true
-
+vim.opt.tabstop= 3
 -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
@@ -482,7 +482,8 @@ require('lazy').setup({
       { 'j-hui/fidget.nvim', opts = {} },
 
       -- Allows extra capabilities provided by nvim-cmp
- {     'hrsh7th/cmp-nvim-lsp',  enabled=true},
+ {     'hrsh7th/cmp-nvim-lsp',  --enabled=true
+ },
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -846,7 +847,9 @@ require('lazy').setup({
       },
     },
   },
-
+  {'Shatur/neovim-ayu', --name='ayu', 
+      lazy = false, priority = 1000},
+    { "bluz71/vim-nightfly-colors", name = "nightfly", lazy = false, priority = 1000 },
   { -- Autocompletion
     'hrsh7th/nvim-cmp',
     enabled=true,
@@ -874,8 +877,8 @@ require('lazy').setup({
           --     require('luasnip.loaders.from_vscode').lazy_load()
           --   end,
           -- },
-        },
-      },
+          --    },
+          --     },
       'saadparwaiz1/cmp_luasnip',
 
       -- Adds other completion capabilities.
@@ -884,9 +887,9 @@ require('lazy').setup({
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
     },
-    { "bluz71/vim-nightfly-colors", name = "nightfly", lazy = false, priority = 1000 },
-    {'Shatur/neovim-ayu', --name='ayu', 
-        lazy = false, priority = 1000},
+  }
+    },
+
     config = function()
       -- See `:help cmp`
       local cmp = require 'cmp'
@@ -903,7 +906,8 @@ require('lazy').setup({
         },
         completion = {         
          
-            autocomplete = false,completeopt = 'menu,menuone,noinsert' },
+            --autocomplete = true,
+            completeopt = 'menu,menuone,noinsert' },
 
         -- For an understanding of why these mappings were
         -- chosen, you will need to read `:help ins-completion`
@@ -927,7 +931,7 @@ require('lazy').setup({
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
           --['<CR>'] = cmp.mapping.confirm { select = true },
-          --['<Tab>'] = cmp.mapping.select_next_item(),
+          ['<Tab>'] = cmp.mapping.select_next_item(),
           --['<S-Tab>'] = cmp.mapping.select_prev_item(),
 
           -- Manually trigger a completion from nvim-cmp.
@@ -966,18 +970,18 @@ require('lazy').setup({
   --           fallback()
   --         end
   --       end, { "i", "s" }),
-  --       ["<S-Tab>"] = cmp.mapping(function(fallback)
-  --         if cmp.visible() then
-  --           cmp.select_prev_item()
-  --         elseif luasnip.jumpable(-1) then
-  --           luasnip.jump(-1)
-  --         else
-  --           fallback()
-  --         end
-  --       end, { "i", "s" }),
+        ["<S-Tab>"] = cmp.mapping(function(fallback)
+          if cmp.visible() then
+            cmp.select_prev_item()
+          elseif luasnip.jumpable(-1) then
+            luasnip.jump(-1)
+          else
+            fallback()
+          end
+        end, { "i", "s" }),
 
-  --                 ["<C-x>"] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
- --["<enter>"] = cmp.mapping.confirm({ select = true }), 
+                  ["<C-x>"] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+ ["<enter>"] = cmp.mapping.confirm({ select = true }), 
           -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
           --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
         },
@@ -993,10 +997,10 @@ require('lazy').setup({
         },
       }
     end,
-    opts = function(_, opts)
-       opts.auto_brackets = opts.auto_brackets or {}
-       table.insert(opts.auto_brackets, "python")
-     end,
+    -- opts = function(_, opts)
+    --    opts.auto_brackets = opts.auto_brackets or {}
+    --    table.insert(opts.auto_brackets, "python")
+    --  end,
   },
 
   { -- You can easily change to a different colorscheme.
@@ -1165,6 +1169,7 @@ require("filetype").setup({
       tsp = "typespec",
       roc = "roc",
       svelte = "svelte",
+      pl = "prolog",
     },
   },
 })
@@ -1401,3 +1406,4 @@ require'lspconfig'.ocamllsp.setup{}
 vim.opt.termguicolors = true
 
 require("bufferline").setup{}
+require('cmp').setup.buffer { enabled = true}

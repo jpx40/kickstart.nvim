@@ -80,6 +80,11 @@ map("n", "<C-t>", "<cmd>FloatermToggle<CR>", {})
 map("v", "<C-/>", "<ESC><cmd>lua require('Comment.api').toggle.linewise(vim.fn.visualmode())<CR>", {})
 
 map("n", "<C-/>", "<cmd>lua require('Comment.api').toggle.linewise.current()<CR>", {})
-
+-- local function on_list(options)
+--   vim.fn.setqflist({}, ' ', options)
+--   vim.cmd.cfirst()
+-- end
+-- map("n", "<C-v>", "<cmd>vim.lsp.buf.definition({ on_list = on_list })<CR>", {})
+ map("n", "<C-v>", "<cmd>vim.lsp.buf.references((nil, { loclist = true })<CR>", {})
 end
 return M

@@ -997,10 +997,10 @@ require('lazy').setup({
         },
       }
     end,
-    -- opts = function(_, opts)
-    --    opts.auto_brackets = opts.auto_brackets or {}
-    --    table.insert(opts.auto_brackets, "python")
-    --  end,
+    opts = function(_, opts)
+       opts.auto_brackets = opts.auto_brackets or {}
+       table.insert(opts.auto_brackets, "python")
+     end,
   },
 
   { -- You can easily change to a different colorscheme.
